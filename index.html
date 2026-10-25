@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CityBites AI — Intelligent Food & Restaurant Concierge</title>
+  <meta name="description" content="AI-powered culinary concierge and semantic recommendation engine for Toronto, Waterloo Region, and beyond.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --background: #0b1120;
+      --card: #151f32;
+      --border: #24324d;
+      --foreground: #f8fafc;
+      --muted-foreground: #94a3b8;
+      --primary: #f97316;
+      --accent: #38bdf8;
+    }
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 9999px;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- Top Header & Navigation -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <span class="text-3xl">✨</span>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+            CityBites <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">AI</span>
+          </h1>
+          <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30">
+            Saved Reels Edition
+          </span>
+        </div>
+        <p class="text-sm text-[var(--muted-foreground)] mt-1">
+          Your personal culinary concierge for Toronto, Waterloo Region, and hidden foodie gems.
+        </p>
+      </div>
+      
+      <div class="flex items-center gap-2.5">
+        <button onclick="openSettingsModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-[var(--card)] hover:bg-slate-800 border border-[var(--border)] hover:border-purple-500/50 transition cursor-pointer" title="Configure AI Provider & API Keys">
+          <span>⚙️</span> <span class="hidden sm:inline">AI Settings</span>
+        </button>
+        <button onclick="scrollToAI()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition shadow-lg shadow-purple-500/20 active:scale-95 cursor-pointer">
+          <span>🤖</span> Ask Concierge
+        </button>
+        <button onclick="pickRandomSpot()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 transition shadow-lg shadow-orange-500/25 active:scale-95 cursor-pointer">
+          <span>🎲</span> Surprise Me!
+        </button>
+      </div>
+    </header>
+
+    <!-- AI Concierge Interactive Card -->
+    <section id="aiSection" class="p-6 rounded-2xl bg-gradient-to-br from-purple-950/40 via-[var(--card)] to-[var(--card)] border border-purple-500/30 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-12 -top-12 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1.5">
+            <span>✨</span> AI Restaurant Concierge
+          </span>
+          <span id="activeEngineBadge" class="text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
+            <span>⚡</span> Local Semantic Engine
+          </span>
+        </div>
+        <button onclick="openSettingsModal()" class="text-xs text-purple-400 hover:text-purple-300 underline flex items-center gap-1">
+          <span>Configure Provider (Gemini / OpenAI)</span>
+        </button>
+      </div>
+
+      <p class="text-sm text-slate-300 mb-4">
+        Tell me what you're craving, who you're with, or the vibe you want. The concierge will evaluate location, cuisine, and ambiance from your saved reels:
+      </p>
+
+      <!-- Input box with Ask button -->
+      <form onsubmit="handleAISubmit(event)" class="relative flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1">
+          <input 
+            type="text" 
+            id="aiInput" 
+            placeholder="e.g., 'Romantic anniversary dinner in Toronto with great steak' or 'Fun brunch in Waterloo with cool drinks'..."
+            class="w-full px-4 py-3 pl-10 rounded-xl bg-[var(--background)] border border-purple-500/30 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+          />
+          <span class="absolute left-3.5 top-3.5 text-purple-400">💬</span>
+        </div>
+        <button 
+          type="submit" 
+          id="askBtn"
+          class="px-6 py-3 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-md">
+          <span id="askBtnText">Ask Concierge</span>
+          <span id="aiLoading" class="hidden animate-spin">⏳</span>
+        </button>
+      </form>
+
+      <!-- Quick Prompt Pills -->
+      <div class="flex items-center gap-2 mt-3 overflow-x-auto pb-1 custom-scroll text-xs">
+        <span class="text-slate-400 whitespace-nowrap">Try asking:</span>
+        <button onclick="setPrompt('Romantic candlelit anniversary dinner in Toronto with steak')" class="px-3 py-1 rounded-full bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-500/30 whitespace-nowrap transition cursor-pointer">
+          🥂 Anniversary steak dinner
+        </button>
+        <button onclick="setPrompt('Bougie brunch in Waterloo or Cambridge with good desserts')" class="px-3 py-1 rounded-full bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-500/30 whitespace-nowrap transition cursor-pointer">
+          🥞 Waterloo / Cambridge brunch
+        </button>
+        <button onclick="setPrompt('Where can I get late night comforting shawarma or momos?')" class="px-3 py-1 rounded-full bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-500/30 whitespace-nowrap transition cursor-pointer">
+          🌯 Late night street comfort food
+        </button>
+        <button onclick="setPrompt('Trendy craft cocktail lounge or speakeasy for drinks')" class="px-3 py-1 rounded-full bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-500/30 whitespace-nowrap transition cursor-pointer">
+          🍸 Speakeasy cocktail lounge
+        </button>
+      </div>
+
+      <!-- AI Response Box (Hidden by default) -->
+      <div id="aiResponseBox" class="hidden mt-5 pt-4 border-t border-purple-500/30 space-y-4">
+        
+        <!-- Reasoning / Thought Dropdown -->
+        <div id="aiThoughtContainer" class="hidden text-xs bg-purple-950/30 p-3 rounded-xl border border-purple-500/20 text-purple-300">
+          <div class="flex items-center gap-1.5 font-semibold text-purple-200 mb-1">
+            <span>🧠</span> <span>Concierge Reasoning Process:</span>
+          </div>
+          <p id="aiThoughtText" class="text-slate-300 leading-relaxed font-mono text-[11px]"></p>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-sm shrink-0 shadow">🤖</div>
+          <div class="flex-1">
+            <p id="aiAnswerText" class="text-sm text-slate-200 leading-relaxed font-normal"></p>
+          </div>
+        </div>
+
+        <!-- AI Recommended Cards -->
+        <div id="aiRecommendationsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Search & Standard Filters -->
+    <div class="bg-[var(--card)] p-4 md:p-5 rounded-2xl border border-[var(--border)] space-y-4">
+      <div class="relative">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Filter catalog by name, cuisine, neighborhood, or creator..."
+          class="w-full px-4 py-3 pl-11 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+          oninput="applyFilters()"
+        />
+        <svg class="w-5 h-5 absolute left-3.5 top-3.5 text-[var(--muted-foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+
+      <!-- Region Pills -->
+      <div class="flex flex-wrap items-center gap-2 pt-1">
+        <span class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] mr-1">Region:</span>
+        <button onclick="setRegionFilter('all')" class="region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-500 text-white transition active:scale-95 cursor-pointer" data-val="all">All Regions</button>
+        <button onclick="setRegionFilter('toronto')" class="region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="toronto">🍁 Toronto</button>
+        <button onclick="setRegionFilter('waterloo')" class="region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="waterloo">🦆 Waterloo / Cambridge / Kitchener</button>
+        <button onclick="setRegionFilter('mississauga')" class="region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="mississauga">🏙️ Mississauga</button>
+        <button onclick="setRegionFilter('trip')" class="region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="trip">🌍 Beyond</button>
+      </div>
+
+      <!-- Vibe Pills -->
+      <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--border)]">
+        <span class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)] mr-1">Vibe:</span>
+        <button onclick="setVibeFilter('all')" class="vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-blue-500 text-white transition active:scale-95 cursor-pointer" data-val="all">All Vibes</button>
+        <button onclick="setVibeFilter('date')" class="vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="date">🥂 Date Night</button>
+        <button onclick="setVibeFilter('brunch')" class="vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="brunch">🍳 Brunch & Coffee</button>
+        <button onclick="setVibeFilter('fine')" class="vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="fine">⭐ Michelin & Fine Dining</button>
+        <button onclick="setVibeFilter('casual')" class="vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="casual">🌯 Street Food & Casual</button>
+        <button onclick="setVibeFilter('drinks')" class="vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer" data-val="drinks">🍸 Cocktails & Patios</button>
+      </div>
+    </div>
+
+    <!-- Active Count -->
+    <div class="flex items-center justify-between px-1">
+      <p id="countText" class="text-xs text-[var(--muted-foreground)]">Showing 19 curated spots</p>
+      <button onclick="resetFilters()" class="text-xs text-orange-400 hover:underline cursor-pointer">Reset All Filters</button>
+    </div>
+
+    <!-- Surprise Me Modal Card -->
+    <div id="surpriseModal" class="hidden p-5 rounded-2xl bg-gradient-to-br from-orange-950/40 via-[var(--card)] to-[var(--card)] border-2 border-orange-500/80 shadow-2xl relative">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="px-2.5 py-1 text-xs font-bold rounded-md bg-orange-500 text-white uppercase tracking-wider">Tonight's Pick!</span>
+          <h2 id="modalTitle" class="text-2xl font-bold text-white mt-2"></h2>
+          <p id="modalRegion" class="text-xs text-orange-300 font-medium"></p>
+        </div>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 text-lg cursor-pointer">✕</button>
+      </div>
+      <p id="modalDesc" class="text-sm text-slate-200 mt-3"></p>
+      <div class="flex gap-3 mt-4">
+        <a id="modalReelLink" href="#" target="_blank" class="px-4 py-2 rounded-xl text-xs font-semibold bg-orange-500 text-white hover:bg-orange-600 transition flex items-center gap-1.5 shadow">
+          <span>▶</span> Watch Instagram Reel
+        </a>
+        <a id="modalMapsLink" href="#" target="_blank" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex items-center gap-1.5">
+          <span>📍</span> Google Maps
+        </a>
+      </div>
+    </div>
+
+    <!-- Master Cards Grid -->
+    <div id="cardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">⚙️</span>
+            <h3 class="text-lg font-bold text-white">AI Concierge Settings</h3>
+          </div>
+          <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+        </div>
+
+        <p class="text-xs text-[var(--muted-foreground)]">
+          Choose the engine that powers your natural language concierge. CityBites defaults to a zero-latency local semantic engine, or you can plug in a live LLM API for deep conversational reasoning.
+        </p>
+
+        <!-- Provider Selection -->
+        <div class="space-y-2">
+          <label class="text-xs font-semibold text-slate-300">AI Provider:</label>
+          <select id="providerSelect" onchange="handleProviderChange()" class="w-full px-3 py-2 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+            <option value="local">⚡ Instant Local Semantic Engine (Default, Zero-Config)</option>
+            <option value="gemini">🔮 Google Gemini API (Gemini 2.5 Flash - Free Tier)</option>
+            <option value="openai">✨ OpenAI API (GPT-4o-mini / GPT-4o)</option>
+            <option value="custom">🚀 Custom / Groq / OpenRouter (OpenAI-compatible)</option>
+          </select>
+        </div>
+
+        <!-- API Key Input -->
+        <div id="apiKeyGroup" class="hidden space-y-2">
+          <div class="flex items-center justify-between">
+            <label id="apiKeyLabel" class="text-xs font-semibold text-slate-300">API Key:</label>
+            <a id="apiKeyHelpLink" href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-purple-400 hover:underline">
+              Get free API key ↗
+            </a>
+          </div>
+          <input 
+            type="password" 
+            id="apiKeyInput" 
+            placeholder="Paste your API key here..."
+            class="w-full px-3 py-2 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          <p class="text-[11px] text-slate-400">
+            🔒 Your API key is stored strictly in your browser's local storage and is never sent to any intermediary server.
+          </p>
+        </div>
+
+        <!-- Custom Endpoint (Optional) -->
+        <div id="customGroup" class="hidden space-y-2">
+          <label class="text-xs font-semibold text-slate-300">Base URL & Model:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input 
+              type="text" 
+              id="customBaseUrl" 
+              placeholder="https://api.groq.com/openai/v1"
+              class="w-full px-3 py-2 rounded-xl bg-[var(--background)] border border-[var(--border)] text-xs text-white focus:outline-none"
+            />
+            <input 
+              type="text" 
+              id="customModel" 
+              placeholder="llama-3.3-70b-versatile"
+              class="w-full px-3 py-2 rounded-xl bg-[var(--background)] border border-[var(--border)] text-xs text-white focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+          <button onclick="clearAISettings()" class="text-xs text-red-400 hover:underline cursor-pointer">
+            Reset to Default
+          </button>
+          <div class="flex gap-2">
+            <button onclick="testConnection()" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition cursor-pointer">
+              Test Connection
+            </button>
+            <button onclick="saveAISettings()" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition cursor-pointer">
+              Save Settings
+            </button>
+          </div>
+        </div>
+
+        <div id="settingsFeedback" class="hidden text-xs p-2 rounded-lg text-center font-medium"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const spots = [
+      {
+        id: 1,
+        name: "Casa Madera",
+        region: "toronto",
+        regionName: "Toronto · King West",
+        vibe: "brunch",
+        vibeName: "Brunch & Cocktails",
+        badge: "Bougie Brunch",
+        creator: "@mattheweats",
+        url: "https://www.instagram.com/reel/DeKLVVBJrJi/",
+        desc: "Lively Tulum vibes inside 1 Hotel Toronto. 30+ buffet options, $5 mimosas, margaritas, caesars & bellinis during brunch.",
+        tags: ["brunch", "buffet", "tulum", "cocktails", "mimosas", "king west", "toronto", "date night", "drinks"],
+        price: "$$$",
+        tip: "Hit the Sunday Buffet Brunch and grab the $5 margaritas or caesars."
+      },
+      {
+        id: 2,
+        name: "Eggstatic",
+        region: "waterloo",
+        regionName: "Waterloo · 610 Laurelwood Dr",
+        vibe: "brunch",
+        vibeName: "Mediterranean Brunch",
+        badge: "Brunch Spot",
+        creator: "@curatedkw",
+        url: "https://www.instagram.com/reel/DQ1sbxSjfBZ/",
+        desc: "Mediterranean aesthetic with indoor olive trees. Famous for fried halloumi, smoked salmon bites, Baklava lattes & Biscoff pancakes.",
+        tags: ["brunch", "mediterranean", "halloumi", "baklava", "pancakes", "waterloo", "breakfast", "coffee", "dessert"],
+        price: "$$",
+        tip: "Pair the fried halloumi bites with a signature Baklava latte."
+      },
+      {
+        id: 3,
+        name: "Something Different",
+        region: "waterloo",
+        regionName: "Cambridge · Waterloo Region",
+        vibe: "date",
+        vibeName: "Romantic & Date Night",
+        badge: "Hidden Gem",
+        creator: "@livinglocalkw",
+        url: "https://www.instagram.com/reel/DZp2nnThBM5/",
+        desc: "One of the finest culinary experiences in Waterloo Region. Intimate multi-course seasonal dining with creative presentations.",
+        tags: ["date night", "fine dining", "romantic", "cambridge", "waterloo", "seasonal", "wine", "anniversary"],
+        price: "$$$$",
+        tip: "Opt for the seasonal chef tasting course with wine pairings for a memorable date."
+      },
+      {
+        id: 4,
+        name: "Jacobs & Co. Steakhouse",
+        region: "toronto",
+        regionName: "Toronto · Brant St",
+        vibe: "fine",
+        vibeName: "Michelin & Fine Dining",
+        badge: "Steakhouse Legend",
+        creator: "@halalornothing",
+        url: "https://www.instagram.com/reel/C87bxLwuYIQ/",
+        desc: "Hands down Canada's premier steakhouse. World-class dry-aged cuts, piano bar ambiance, and halal options available.",
+        tags: ["steak", "fine dining", "halal", "luxury", "date night", "king west", "toronto", "anniversary", "meat"],
+        price: "$$$$",
+        tip: "Ask the sommelier for cuts aged over 60 days, and order the legendary caesar salad prepared tableside."
+      },
+      {
+        id: 5,
+        name: "LSL Toronto",
+        region: "toronto",
+        regionName: "Toronto · Avenue Road",
+        vibe: "fine",
+        vibeName: "Michelin & Fine Dining",
+        badge: "French-Japanese",
+        creator: "@fred.bk",
+        url: "https://www.instagram.com/reel/C88IRDEONZE/",
+        desc: "Harmonic marriage of grand French traditions with Japanese mastery by Chef Masaki Saito & Christian Le Squer.",
+        tags: ["michelin", "french", "japanese", "luxury", "date night", "anniversary", "toronto"],
+        price: "$$$$",
+        tip: "One of Toronto's most exclusive reservation tickets—ideal for milestone celebrations."
+      },
+      {
+        id: 6,
+        name: "Choun Kitchen",
+        region: "waterloo",
+        regionName: "Cambridge · Downtown",
+        vibe: "casual",
+        vibeName: "Street Food & Casual",
+        badge: "Southeast Asian",
+        creator: "@eatcambridgeont",
+        url: "https://www.instagram.com/reel/DYhLT4SRtLe/",
+        desc: "Authentic, vibrant Southeast Asian kitchen serving comforting curries, aromatic noodle soups, and bold street flavor.",
+        tags: ["southeast asian", "noodles", "curry", "casual", "cambridge", "comfort food", "waterloo", "cheap eats"],
+        price: "$$",
+        tip: "The noodle soups and coconut curries are unmatched comfort food on a chilly day."
+      },
+      {
+        id: 7,
+        name: "The Civil",
+        region: "waterloo",
+        regionName: "Kitchener · Core",
+        vibe: "drinks",
+        vibeName: "Cocktails & Patios",
+        badge: "Cocktail Flight",
+        creator: "@thecivilkitchener",
+        url: "https://www.instagram.com/p/DDK2UW8RNhE/",
+        desc: "Moody cocktail lounge famous for its rotating cocktail flights: sample four handcrafted seasonal mini-cocktails in one sitting.",
+        tags: ["cocktails", "drinks", "speakeasy", "flights", "kitchener", "nightlife", "date night", "waterloo"],
+        price: "$$",
+        tip: "Order the seasonal cocktail flight so you can taste four distinct house concoctions."
+      },
+      {
+        id: 8,
+        name: "Terroir Bakery",
+        region: "waterloo",
+        regionName: "Cambridge",
+        vibe: "brunch",
+        vibeName: "Bakery & Coffee",
+        badge: "Artisanal Baker",
+        creator: "@cityofcbridge",
+        url: "https://www.instagram.com/p/DQFURqhgc3d/",
+        desc: "Seasonal artisanal bakery using local flours and fresh butter for flaky croissants, fruit tarts, and sourdough loaves.",
+        tags: ["bakery", "pastries", "coffee", "croissants", "sourdough", "cambridge", "breakfast", "waterloo"],
+        price: "$",
+        tip: "Get there before 11 AM on weekends for the fresh, still-warm laminated pastries."
+      },
+      {
+        id: 9,
+        name: "Top 6 Shawarma Tour",
+        region: "toronto",
+        regionName: "Toronto · Across the 6ix",
+        vibe: "casual",
+        vibeName: "Street Food & Casual",
+        badge: "Street Legend",
+        creator: "@marcelloeats",
+        url: "https://www.instagram.com/reel/DS6OtmvESn5/",
+        desc: "Marcello's definitive ranking of Toronto's top 6 chicken and beef shawarma spots loaded with garlic sauce and fresh pickles.",
+        tags: ["shawarma", "halal", "street food", "late night", "cheap eats", "toronto", "casual", "garlic"],
+        price: "$",
+        tip: "Ask for extra toum (garlic whip) and saj bread for maximum crunch."
+      },
+      {
+        id: 10,
+        name: "Best Momo in Town",
+        region: "toronto",
+        regionName: "Toronto · Parkdale / Scarborough",
+        vibe: "casual",
+        vibeName: "Street Food & Casual",
+        badge: "Comfort Dumplings",
+        creator: "@torontovibesonly",
+        url: "https://www.instagram.com/reel/DOryXwRDX9t/",
+        desc: "Authentic steaming hot Tibetan and Nepalese momos with signature spicy red pepper sesame dipping sauce.",
+        tags: ["dumplings", "momo", "comfort food", "tibetan", "cheap eats", "toronto", "casual", "spicy"],
+        price: "$",
+        tip: "Get the half-steamed, half-fried combo with extra sesame chili dipping oil."
+      },
+      {
+        id: 11,
+        name: "Top Toronto Date Night Resos",
+        region: "toronto",
+        regionName: "Toronto · Diverse Neighborhoods",
+        vibe: "date",
+        vibeName: "Romantic & Date Night",
+        badge: "Date Guide",
+        creator: "@natdoumkos",
+        url: "https://www.instagram.com/reel/C84q1-euWaT/",
+        desc: "Curated date-night reservations with intimate low lighting, craft wine lists, and romantic mood music.",
+        tags: ["date night", "romantic", "wine", "cozy", "toronto", "anniversary"],
+        price: "$$$",
+        tip: "Book 2 weeks in advance for a corner table or booth seating."
+      },
+      {
+        id: 12,
+        name: "Ontario 16 Michelin Guide Tour",
+        region: "toronto",
+        regionName: "Ontario & Toronto",
+        vibe: "fine",
+        vibeName: "Michelin & Fine Dining",
+        badge: "Michelin Stars",
+        creator: "@toronto.culture",
+        url: "https://www.instagram.com/p/DAT8ITGyXO3/",
+        desc: "The complete guide to all 16 Michelin-starred restaurants across Ontario including Alo, Quetzal, Edulis, and Don Alfonso 1890.",
+        tags: ["michelin", "fine dining", "luxury", "tasting menu", "toronto", "ontario"],
+        price: "$$$$",
+        tip: "Review the guide's seasonal calendar; Alo and Edulis drop reservations at midnight on the 1st of each month."
+      },
+      {
+        id: 13,
+        name: "Under The Stars Dining",
+        region: "trip",
+        regionName: "Romantic Getaway",
+        vibe: "date",
+        vibeName: "Romantic & Date Night",
+        badge: "Unique Experience",
+        creator: "@waddupcanada",
+        url: "https://www.instagram.com/reel/DA2Oq7mPsmw/",
+        desc: "Breathtaking heated geodesic dome dining under the night stars with multi-course fondue and local cider.",
+        tags: ["dome dining", "stars", "romantic", "date night", "getaway", "winter"],
+        price: "$$$",
+        tip: "Book sunset slot so you watch the golden hour transition into starry night skies."
+      },
+      {
+        id: 14,
+        name: "Waterloo Hidden Cafe & Plants",
+        region: "waterloo",
+        regionName: "Waterloo · Uptown",
+        vibe: "brunch",
+        vibeName: "Bakery & Coffee",
+        badge: "Cozy Aesthetic",
+        creator: "@curatedkw",
+        url: "https://www.instagram.com/reel/C6yvH2_pXzS/",
+        desc: "Sunlit botanical plant shop and specialty matcha cafe. House lavender syrups, oat matcha lattes, and gluten-free pastries.",
+        tags: ["matcha", "coffee", "plants", "aesthetic", "uptown waterloo", "study spot", "brunch"],
+        price: "$",
+        tip: "Order the iced iced lavender oat matcha latte paired with a pistachio pastry."
+      },
+      {
+        id: 15,
+        name: "King West Rooftop Lounge",
+        region: "toronto",
+        regionName: "Toronto · King West",
+        vibe: "drinks",
+        vibeName: "Cocktails & Patios",
+        badge: "Rooftop Vibe",
+        creator: "@mattheweats",
+        url: "https://www.instagram.com/reel/C57h2m2RkLd/",
+        desc: "Chic King West rooftop overlooking the CN Tower. DJ sets, elevated share plates, and bespoke tequila cocktails.",
+        tags: ["rooftop", "cocktails", "patio", "views", "king west", "toronto", "nightlife"],
+        price: "$$$",
+        tip: "Catch the golden hour patio seating between 6 PM and 8 PM."
+      },
+      {
+        id: 16,
+        name: "Cambridge Mill",
+        region: "waterloo",
+        regionName: "Cambridge · Grand River",
+        vibe: "date",
+        vibeName: "Romantic & Date Night",
+        badge: "Historic Gem",
+        creator: "@livinglocalkw",
+        url: "https://www.instagram.com/reel/C41xLq8R9aB/",
+        desc: "Historic 19th-century restored mill perched directly over the rushing waters of the Grand River. Panoramic water views.",
+        tags: ["waterfront", "historic", "romantic", "date night", "cambridge", "waterloo", "brunch", "wine"],
+        price: "$$$",
+        tip: "Request a window table overlooking the river rapids for an unforgettable anniversary meal."
+      },
+      {
+        id: 17,
+        name: "Mississauga Streetsville Comforts",
+        region: "mississauga",
+        regionName: "Mississauga · Streetsville",
+        vibe: "casual",
+        vibeName: "Street Food & Casual",
+        badge: "Village Charm",
+        creator: "@marcelloeats",
+        url: "https://www.instagram.com/reel/C3zYpP0R5lM/",
+        desc: "Cozy village street food stop offering wood-fired flatbreads, smashburgers, and handcrafted shakes in historic Streetsville.",
+        tags: ["mississauga", "streetsville", "burgers", "casual", "comfort food", "cheap eats"],
+        price: "$$",
+        tip: "The double smashburger with house chipotle aioli and seasoned fries is a local favorite."
+      },
+      {
+        id: 18,
+        name: "Toronto Korean Pocha & Hot Pot",
+        region: "toronto",
+        regionName: "Toronto · Koreatown North",
+        vibe: "casual",
+        vibeName: "Street Food & Casual",
+        badge: "Late Night Pocha",
+        creator: "@torontovibesonly",
+        url: "https://www.instagram.com/reel/C29wNxTRqTy/",
+        desc: "Bustling Korean street-food tent vibe serving bubbling army stew (budae jjigae), crispy scallion pancakes, and flavored soju.",
+        tags: ["korean", "hot pot", "late night", "comfort food", "toronto", "casual", "spicy"],
+        price: "$$",
+        tip: "Great with a small group of 3-4 friends—share the bubbling army stew with ramen noodles."
+      },
+      {
+        id: 19,
+        name: "Waterloo Microbrewery & Smokehouse",
+        region: "waterloo",
+        regionName: "Waterloo · Tech Park",
+        vibe: "drinks",
+        vibeName: "Cocktails & Patios",
+        badge: "Craft Brews",
+        creator: "@curatedkw",
+        url: "https://www.instagram.com/reel/C18eMz2R_qV/",
+        desc: "Spacious industrial taproom featuring 16 rotating craft IPAs and sours, paired with Texas-style slow-smoked brisket sandwiches.",
+        tags: ["brewery", "craft beer", "bbq", "patio", "casual", "waterloo", "drinks"],
+        price: "$$",
+        tip: "Grab a flight of 4 draft pours and split the 14-hour smoked brisket platter."
+      }
+    ];
+
+    let currentRegion = 'all';
+    let currentVibe = 'all';
+
+    // AI Configuration State
+    const DEFAULT_CONFIG = {
+      provider: 'local',
+      apiKey: '',
+      customBaseUrl: 'https://api.groq.com/openai/v1',
+      customModel: 'llama-3.3-70b-versatile'
+    };
+
+    let aiConfig = { ...DEFAULT_CONFIG };
+
+    function loadAIConfig() {
+      try {
+        const saved = localStorage.getItem('citybites_ai_config');
+        if (saved) {
+          aiConfig = { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+        }
+      } catch (e) {
+        console.error('Failed to load ai config', e);
+      }
+      updateActiveEngineBadge();
+    }
+
+    function updateActiveEngineBadge() {
+      const badge = document.getElementById('activeEngineBadge');
+      if (!badge) return;
+      if (aiConfig.provider === 'gemini') {
+        badge.innerHTML = `<span>🔮</span> Gemini 2.5 Flash (Live)`;
+        badge.className = "text-xs px-2 py-0.5 rounded-md bg-purple-900/60 text-purple-200 border border-purple-500/40 flex items-center gap-1 font-semibold";
+      } else if (aiConfig.provider === 'openai') {
+        badge.innerHTML = `<span>✨</span> OpenAI GPT-4o (Live)`;
+        badge.className = "text-xs px-2 py-0.5 rounded-md bg-emerald-900/60 text-emerald-200 border border-emerald-500/40 flex items-center gap-1 font-semibold";
+      } else if (aiConfig.provider === 'custom') {
+        badge.innerHTML = `<span>🚀</span> Custom Model (${aiConfig.customModel || 'LLM'})`;
+        badge.className = "text-xs px-2 py-0.5 rounded-md bg-blue-900/60 text-blue-200 border border-blue-500/40 flex items-center gap-1 font-semibold";
+      } else {
+        badge.innerHTML = `<span>⚡</span> Local Semantic Engine`;
+        badge.className = "text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1";
+      }
+    }
+
+    function openSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      document.getElementById('providerSelect').value = aiConfig.provider;
+      document.getElementById('apiKeyInput').value = aiConfig.apiKey || '';
+      document.getElementById('customBaseUrl').value = aiConfig.customBaseUrl || '';
+      document.getElementById('customModel').value = aiConfig.customModel || '';
+      handleProviderChange();
+      hideSettingsFeedback();
+      modal.classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function handleProviderChange() {
+      const prov = document.getElementById('providerSelect').value;
+      const keyGroup = document.getElementById('apiKeyGroup');
+      const customGroup = document.getElementById('customGroup');
+      const helpLink = document.getElementById('apiKeyHelpLink');
+      const keyLabel = document.getElementById('apiKeyLabel');
+
+      if (prov === 'local') {
+        keyGroup.classList.add('hidden');
+        customGroup.classList.add('hidden');
+      } else if (prov === 'gemini') {
+        keyGroup.classList.remove('hidden');
+        customGroup.classList.add('hidden');
+        keyLabel.innerText = "Google Gemini API Key:";
+        helpLink.href = "https://aistudio.google.com/app/apikey";
+        helpLink.innerText = "Get free Gemini API key ↗";
+      } else if (prov === 'openai') {
+        keyGroup.classList.remove('hidden');
+        customGroup.classList.add('hidden');
+        keyLabel.innerText = "OpenAI API Key:";
+        helpLink.href = "https://platform.openai.com/api-keys";
+        helpLink.innerText = "Get OpenAI API key ↗";
+      } else if (prov === 'custom') {
+        keyGroup.classList.remove('hidden');
+        customGroup.classList.remove('hidden');
+        keyLabel.innerText = "Custom API Key (or Groq/OpenRouter):";
+        helpLink.href = "https://console.groq.com/keys";
+        helpLink.innerText = "Get Groq key ↗";
+      }
+    }
+
+    function showSettingsFeedback(msg, isError = false) {
+      const fb = document.getElementById('settingsFeedback');
+      fb.innerText = msg;
+      fb.className = `text-xs p-2.5 rounded-xl text-center font-medium ${isError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`;
+      fb.classList.remove('hidden');
+    }
+
+    function hideSettingsFeedback() {
+      document.getElementById('settingsFeedback').classList.add('hidden');
+    }
+
+    function saveAISettings() {
+      const prov = document.getElementById('providerSelect').value;
+      const key = document.getElementById('apiKeyInput').value.trim();
+      const baseUrl = document.getElementById('customBaseUrl').value.trim();
+      const model = document.getElementById('customModel').value.trim();
+
+      if (prov !== 'local' && !key) {
+        showSettingsFeedback('Please enter an API key for the selected provider, or switch to Local Semantic Engine.', true);
+        return;
+      }
+
+      aiConfig = {
+        provider: prov,
+        apiKey: key,
+        customBaseUrl: baseUrl || DEFAULT_CONFIG.customBaseUrl,
+        customModel: model || DEFAULT_CONFIG.customModel
+      };
+
+      try {
+        localStorage.setItem('citybites_ai_config', JSON.stringify(aiConfig));
+      } catch (e) {
+        console.error('Failed to save to localStorage', e);
+      }
+
+      updateActiveEngineBadge();
+      showSettingsFeedback('Settings saved successfully!');
+      setTimeout(() => {
+        closeSettingsModal();
+      }, 1000);
+    }
+
+    function clearAISettings() {
+      aiConfig = { ...DEFAULT_CONFIG };
+      localStorage.removeItem('citybites_ai_config');
+      document.getElementById('providerSelect').value = 'local';
+      document.getElementById('apiKeyInput').value = '';
+      handleProviderChange();
+      updateActiveEngineBadge();
+      showSettingsFeedback('Reset to Local Semantic Engine.');
+    }
+
+    async function testConnection() {
+      const prov = document.getElementById('providerSelect').value;
+      const key = document.getElementById('apiKeyInput').value.trim();
+      const baseUrl = document.getElementById('customBaseUrl').value.trim() || DEFAULT_CONFIG.customBaseUrl;
+      const model = document.getElementById('customModel').value.trim() || DEFAULT_CONFIG.customModel;
+
+      if (prov === 'local') {
+        showSettingsFeedback('Local engine is instant and requires zero external connections!');
+        return;
+      }
+
+      if (!key) {
+        showSettingsFeedback('Please enter an API key to test.', true);
+        return;
+      }
+
+      showSettingsFeedback('Testing connection...', false);
+
+      try {
+        if (prov === 'gemini') {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: 'Ping test. Reply with JSON: {"status": "ok"}' }] }],
+              generationConfig: { responseMimeType: 'application/json' }
+            })
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          const data = await res.json();
+          showSettingsFeedback('Connection verified! Gemini API is active & responsive.');
+        } else if (prov === 'openai') {
+          const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${key}`
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{ role: 'user', content: 'Ping' }],
+              max_tokens: 5
+            })
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          showSettingsFeedback('Connection verified! OpenAI API is active.');
+        } else if (prov === 'custom') {
+          const endpoint = baseUrl.endsWith('/') ? `${baseUrl}chat/completions` : `${baseUrl}/chat/completions`;
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${key}`
+            },
+            body: JSON.stringify({
+              model: model,
+              messages: [{ role: 'user', content: 'Ping' }],
+              max_tokens: 5
+            })
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          showSettingsFeedback('Connection verified! Custom LLM endpoint responded.');
+        }
+      } catch (err) {
+        showSettingsFeedback(`Connection failed: ${err.message}`, true);
+      }
+    }
+
+    // Catalog Rendering
+    function renderSpots(list) {
+      const grid = document.getElementById('cardsGrid');
+      grid.innerHTML = '';
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-[var(--muted-foreground)]">
+            <p class="text-3xl mb-2">🔍</p>
+            <p class="text-sm">No spots matched your filters. Try clearing your search.</p>
+          </div>
+        `;
+        document.getElementById('countText').innerText = `Showing 0 spots`;
+        return;
+      }
+
+      document.getElementById('countText').innerText = `Showing ${list.length} of ${spots.length} spots`;
+
+      list.forEach(spot => {
+        const card = document.createElement('div');
+        card.className = "flex flex-col justify-between p-5 rounded-2xl bg-[var(--card)] border border-[var(--border)] hover:border-orange-500/50 hover:shadow-xl transition group";
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                ${spot.badge}
+              </span>
+              <span class="text-xs text-[var(--muted-foreground)] flex items-center gap-1">
+                📍 ${spot.regionName}
+              </span>
+            </div>
+            <h3 class="text-lg font-bold text-white group-hover:text-orange-400 transition">${spot.name}</h3>
+            <p class="text-xs font-medium text-blue-400 mt-0.5">${spot.vibeName} · <span class="text-slate-400">${spot.price}</span></p>
+            <p class="text-xs text-slate-300 mt-2.5 leading-relaxed">${spot.desc}</p>
+            ${spot.tip ? `<p class="text-xs text-amber-300/90 mt-2 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">💡 <span class="font-semibold">Tip:</span> ${spot.tip}</p>` : ''}
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-[var(--border)] flex items-center justify-between">
+            <span class="text-xs text-slate-400 italic">${spot.creator}</span>
+            <div class="flex gap-2">
+              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + ' ' + spot.regionName)}" target="_blank" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-700 text-slate-200 transition" title="Search on Google Maps">
+                📍 Maps
+              </a>
+              <a href="${spot.url}" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition flex items-center gap-1 shadow">
+                <span>▶</span> Reel
+              </a>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // AI Concierge Handling
+    async function handleAISubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('aiInput');
+      const query = input.value.trim();
+      if (!query) return;
+
+      const loading = document.getElementById('aiLoading');
+      const askBtnText = document.getElementById('askBtnText');
+      const askBtn = document.getElementById('askBtn');
+
+      loading.classList.remove('hidden');
+      askBtnText.innerText = "Analyzing...";
+      askBtn.disabled = true;
+
+      try {
+        if (aiConfig.provider === 'gemini' && aiConfig.apiKey) {
+          await queryGeminiConcierge(query);
+        } else if ((aiConfig.provider === 'openai' || aiConfig.provider === 'custom') && aiConfig.apiKey) {
+          await queryOpenAIConcierge(query);
+        } else {
+          // Local Semantic Engine
+          setTimeout(() => {
+            processLocalSemanticQuery(query);
+            finishAILoading();
+          }, 350);
+          return;
+        }
+      } catch (err) {
+        console.warn('Live LLM call encountered error, falling back to local semantic engine:', err);
+        processLocalSemanticQuery(query, `Notice: Live API call failed (${err.message}). Showing results from local semantic engine.`);
+      }
+
+      finishAILoading();
+    }
+
+    function finishAILoading() {
+      const loading = document.getElementById('aiLoading');
+      const askBtnText = document.getElementById('askBtnText');
+      const askBtn = document.getElementById('askBtn');
+      loading.classList.add('hidden');
+      askBtnText.innerText = "Ask Concierge";
+      askBtn.disabled = false;
+    }
+
+    function setPrompt(text) {
+      document.getElementById('aiInput').value = text;
+      handleAISubmit();
+    }
+
+    // Gemini API Direct Implementation
+    async function queryGeminiConcierge(query) {
+      const systemInstruction = `You are CityBites AI, an expert culinary concierge for Toronto and Waterloo Region.
+You are given a curated database of 19 restaurants from saved Instagram reels.
+Your task is to analyze the user's natural language request (craving, vibe, location constraints, dietary, party type) and recommend the best spot(s).
+Respond STRICTLY with valid JSON following this schema:
+{
+  "thought": "Your concise step-by-step reasoning about matching location, vibe, and dishes",
+  "primary_spot_id": <number: id of the best matching restaurant>,
+  "secondary_spot_ids": [<array of numbers: alternative match ids>],
+  "recommendation": "<conversational explanation of why this spot fits the request>",
+  "pro_tip": "<specific signature ordering or timing advice>"
+}
+
+Here is the full restaurants catalog:
+${JSON.stringify(spots.map(s => ({
+  id: s.id,
+  name: s.name,
+  regionName: s.regionName,
+  vibeName: s.vibeName,
+  price: s.price,
+  desc: s.desc,
+  tip: s.tip,
+  tags: s.tags
+})))}`;
+
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${aiConfig.apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemInstruction}\n\nUser Query: "${query}"` }]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (!res.ok) throw new Error(`Gemini API error: ${res.statusText}`);
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('No response content from Gemini');
+
+      const parsed = JSON.parse(rawText);
+      renderAIResult(query, parsed);
+    }
+
+    // OpenAI / Compatible Implementation
+    async function queryOpenAIConcierge(query) {
+      const isCustom = aiConfig.provider === 'custom';
+      const baseUrl = isCustom ? aiConfig.customBaseUrl : 'https://api.openai.com/v1';
+      const endpoint = baseUrl.endsWith('/') ? `${baseUrl}chat/completions` : `${baseUrl}/chat/completions`;
+      const model = isCustom ? aiConfig.customModel : 'gpt-4o-mini';
+
+      const systemPrompt = `You are CityBites AI, an expert culinary concierge for Toronto and Waterloo Region.
+You are given a catalog of 19 restaurants from saved Instagram reels:
+${JSON.stringify(spots.map(s => ({ id: s.id, name: s.name, regionName: s.regionName, vibeName: s.vibeName, price: s.price, desc: s.desc, tip: s.tip, tags: s.tags })))}
+
+Respond STRICTLY with JSON:
+{
+  "thought": "Your concise step-by-step reasoning",
+  "primary_spot_id": <id>,
+  "secondary_spot_ids": [<ids>],
+  "recommendation": "<conversational explanation of why this spot fits>",
+  "pro_tip": "<specific signature ordering advice>"
+}`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiConfig.apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: query }
+          ],
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      if (!res.ok) throw new Error(`API error ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+      const rawText = data.choices?.[0]?.message?.content;
+      if (!rawText) throw new Error('No content returned from LLM');
+
+      const parsed = JSON.parse(rawText);
+      renderAIResult(query, parsed);
+    }
+
+    function renderAIResult(query, payload) {
+      const responseBox = document.getElementById('aiResponseBox');
+      const answerText = document.getElementById('aiAnswerText');
+      const recsGrid = document.getElementById('aiRecommendationsGrid');
+      const thoughtContainer = document.getElementById('aiThoughtContainer');
+      const thoughtText = document.getElementById('aiThoughtText');
+
+      responseBox.classList.remove('hidden');
+      recsGrid.innerHTML = '';
+
+      if (payload.thought) {
+        thoughtText.innerText = payload.thought;
+        thoughtContainer.classList.remove('hidden');
+      } else {
+        thoughtContainer.classList.add('hidden');
+      }
+
+      const primary = spots.find(s => s.id === payload.primary_spot_id) || spots[0];
+      const secondaries = (payload.secondary_spot_ids || [])
+        .map(id => spots.find(s => s.id === id))
+        .filter(s => s && s.id !== primary.id);
+
+      let text = `<strong>${primary.name}</strong> (${primary.regionName}): ${payload.recommendation || primary.desc} `;
+      if (payload.pro_tip || primary.tip) {
+        text += `<span class="text-amber-300 font-medium">Pro-tip: ${payload.pro_tip || primary.tip}</span>`;
+      }
+
+      answerText.innerHTML = text;
+
+      // Render cards
+      createRecommendationCard(primary, recsGrid, "Top Recommendation");
+      secondaries.slice(0, 2).forEach(s => {
+        createRecommendationCard(s, recsGrid, "Alternative Option");
+      });
+    }
+
+    // Local Semantic Scoring Engine (Zero-Latency Fallback)
+    function processLocalSemanticQuery(query, fallbackNotice = "") {
+      const q = query.toLowerCase();
+      
+      const scored = spots.map(spot => {
+        let score = 0;
+        let reasons = [];
+
+        if (q.includes('waterloo') && (spot.region === 'waterloo' || spot.regionName.toLowerCase().includes('waterloo'))) {
+          score += 15; reasons.push('in Waterloo Region');
+        }
+        if (q.includes('cambridge') && spot.regionName.toLowerCase().includes('cambridge')) {
+          score += 20; reasons.push('located right in Cambridge');
+        }
+        if (q.includes('kitchener') && spot.regionName.toLowerCase().includes('kitchener')) {
+          score += 20; reasons.push('in Kitchener');
+        }
+        if (q.includes('toronto') && spot.region === 'toronto') {
+          score += 10; reasons.push('in Toronto');
+        }
+        if (q.includes('king west') && spot.regionName.toLowerCase().includes('king west')) {
+          score += 15; reasons.push('on King West');
+        }
+        if (q.includes('yorkville') && spot.regionName.toLowerCase().includes('yorkville')) {
+          score += 20; reasons.push('in Yorkville');
+        }
+        if (q.includes('mississauga') && spot.region === 'mississauga') {
+          score += 20; reasons.push('in Mississauga');
+        }
+
+        if ((q.includes('romantic') || q.includes('date') || q.includes('anniversary') || q.includes('partner') || q.includes('couple')) && (spot.vibe === 'date' || spot.tags.includes('romantic') || spot.tags.includes('date night'))) {
+          score += 18; reasons.push('has romantic date night ambiance');
+        }
+        if ((q.includes('brunch') || q.includes('breakfast') || q.includes('pancake') || q.includes('mimosa')) && (spot.vibe === 'brunch' || spot.tags.includes('brunch'))) {
+          score += 20; reasons.push('is one of your top saved brunch spots');
+        }
+        if ((q.includes('steak') || q.includes('meat') || q.includes('beef')) && spot.tags.includes('steak')) {
+          score += 25; reasons.push('is renowned for incredible steaks');
+        }
+        if (q.includes('halal') && spot.tags.includes('halal')) {
+          score += 25; reasons.push('offers verified halal choices');
+        }
+        if ((q.includes('cocktail') || q.includes('drinks') || q.includes('speakeasy') || q.includes('lounge') || q.includes('bar')) && (spot.tags.includes('cocktails') || spot.vibe === 'drinks')) {
+          score += 18; reasons.push('specializes in handcrafted cocktails');
+        }
+        if ((q.includes('michelin') || q.includes('fine dining') || q.includes('luxury') || q.includes('fancy')) && (spot.vibe === 'fine' || spot.tags.includes('michelin'))) {
+          score += 20; reasons.push('features Michelin-caliber fine dining');
+        }
+        if ((q.includes('street') || q.includes('casual') || q.includes('cheap') || q.includes('shawarma') || q.includes('momo') || q.includes('dumpling') || q.includes('late night')) && (spot.vibe === 'casual' || spot.tags.includes('casual') || spot.tags.includes('cheap eats'))) {
+          score += 18; reasons.push('satisfies casual comfort street food cravings');
+        }
+        if ((q.includes('coffee') || q.includes('cafe') || q.includes('bakery') || q.includes('pastry')) && (spot.tags.includes('coffee') || spot.tags.includes('bakery'))) {
+          score += 20; reasons.push('features stellar coffee and baked goods');
+        }
+
+        spot.tags.forEach(t => {
+          if (q.includes(t)) score += 5;
+        });
+
+        return { spot, score, reasons };
+      });
+
+      scored.sort((a, b) => b.score - a.score);
+      const topMatches = scored.filter(s => s.score > 5).slice(0, 2);
+
+      const responseBox = document.getElementById('aiResponseBox');
+      const answerText = document.getElementById('aiAnswerText');
+      const recsGrid = document.getElementById('aiRecommendationsGrid');
+      const thoughtContainer = document.getElementById('aiThoughtContainer');
+      const thoughtText = document.getElementById('aiThoughtText');
+
+      responseBox.classList.remove('hidden');
+      recsGrid.innerHTML = '';
+
+      if (topMatches.length > 0 && topMatches[0].reasons.length > 0) {
+        thoughtText.innerText = `Evaluated multi-factor scores: Matched query keywords [${topMatches[0].reasons.join(', ')}]. Highest affinity score: ${topMatches[0].score} pts.`;
+        thoughtContainer.classList.remove('hidden');
+      } else {
+        thoughtContainer.classList.add('hidden');
+      }
+
+      if (topMatches.length === 0) {
+        answerText.innerHTML = `${fallbackNotice ? `<span class="text-amber-400 block mb-1">${fallbackNotice}</span>` : ''}I couldn't find an exact spot matching "<strong>${query}</strong>" in your saved reels list, but here is a crowd-favorite spot you might love: <strong>${spots[0].name}</strong> (${spots[0].regionName}).`;
+        createRecommendationCard(spots[0], recsGrid, "Crowd Favorite");
+        return;
+      }
+
+      const primary = topMatches[0].spot;
+      let summaryText = `${fallbackNotice ? `<span class="text-amber-400 block mb-1">${fallbackNotice}</span>` : ''}Based on your request, I recommend <strong>${primary.name}</strong> (${primary.regionName}). ${primary.desc} `;
+      if (primary.tip) {
+        summaryText += `<span class="text-amber-300 font-medium">Pro-tip: ${primary.tip}</span>`;
+      }
+
+      answerText.innerHTML = summaryText;
+
+      topMatches.forEach((item, idx) => {
+        createRecommendationCard(item.spot, recsGrid, idx === 0 ? "Top Recommendation" : "Great Alternative");
+      });
+    }
+
+    function createRecommendationCard(spot, container, label = "") {
+      const card = document.createElement('div');
+      card.className = "p-4 rounded-xl bg-purple-900/30 border border-purple-500/40 flex flex-col justify-between";
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <span class="text-xs font-bold text-purple-300 flex items-center gap-1.5">
+              ${spot.name}
+              ${label ? `<span class="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 border border-purple-500/40">${label}</span>` : ''}
+            </span>
+            <span class="text-xs text-slate-400">📍 ${spot.regionName}</span>
+          </div>
+          <p class="text-xs text-slate-300 line-clamp-2">${spot.desc}</p>
+        </div>
+        <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-purple-500/20">
+          <span class="text-xs font-semibold text-amber-300">${spot.price}</span>
+          <div class="flex gap-2">
+            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + ' ' + spot.regionName)}" target="_blank" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+              📍 Maps
+            </a>
+            <a href="${spot.url}" target="_blank" class="px-3 py-1 rounded-lg text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition flex items-center gap-1 shadow">
+              <span>▶</span> Reel
+            </a>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    function scrollToAI() {
+      document.getElementById('aiSection').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('aiInput').focus();
+    }
+
+    function applyFilters() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      const filtered = spots.filter(s => {
+        const matchesRegion = currentRegion === 'all' || s.region === currentRegion;
+        const matchesVibe = currentVibe === 'all' || s.vibe === currentVibe;
+        const matchesSearch = !q || 
+          s.name.toLowerCase().includes(q) || 
+          s.desc.toLowerCase().includes(q) || 
+          s.regionName.toLowerCase().includes(q) || 
+          s.tags.some(t => t.includes(q));
+
+        return matchesRegion && matchesVibe && matchesSearch;
+      });
+
+      renderSpots(filtered);
+    }
+
+    function setRegionFilter(val) {
+      currentRegion = val;
+      document.querySelectorAll('.region-pill').forEach(btn => {
+        if (btn.dataset.val === val) {
+          btn.className = "region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-500 text-white transition active:scale-95 cursor-pointer";
+        } else {
+          btn.className = "region-pill px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer";
+        }
+      });
+      applyFilters();
+    }
+
+    function setVibeFilter(val) {
+      currentVibe = val;
+      document.querySelectorAll('.vibe-pill').forEach(btn => {
+        if (btn.dataset.val === val) {
+          btn.className = "vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-blue-500 text-white transition active:scale-95 cursor-pointer";
+        } else {
+          btn.className = "vibe-pill px-3 py-1 rounded-lg text-xs font-medium bg-[var(--background)] hover:bg-slate-800 text-[var(--muted-foreground)] transition active:scale-95 cursor-pointer";
+        }
+      });
+      applyFilters();
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      setRegionFilter('all');
+      setVibeFilter('all');
+    }
+
+    function pickRandomSpot() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const currentList = spots.filter(s => {
+        const matchesRegion = currentRegion === 'all' || s.region === currentRegion;
+        const matchesVibe = currentVibe === 'all' || s.vibe === currentVibe;
+        const matchesSearch = !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q);
+        return matchesRegion && matchesVibe && matchesSearch;
+      });
+
+      const pool = currentList.length > 0 ? currentList : spots;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+
+      const modal = document.getElementById('surpriseModal');
+      document.getElementById('modalTitle').innerText = pick.name;
+      document.getElementById('modalRegion').innerText = `${pick.regionName} · ${pick.vibeName} · ${pick.price}`;
+      document.getElementById('modalDesc').innerText = `${pick.desc} ${pick.tip ? 'Tip: ' + pick.tip : ''}`;
+      document.getElementById('modalReelLink').href = pick.url;
+      document.getElementById('modalMapsLink').href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pick.name + ' ' + pick.regionName)}`;
+
+      modal.classList.remove('hidden');
+      modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function closeModal() {
+      document.getElementById('surpriseModal').classList.add('hidden');
+    }
+
+    // Initialize
+    loadAIConfig();
+    renderSpots(spots);
+  </script>
+</body>
+</html>

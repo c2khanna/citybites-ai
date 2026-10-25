@@ -1,0 +1,18 @@
+{
+  "name": "citybites-ai",
+  "version": "1.0.0",
+  "description": "Intelligent Food & Restaurant Concierge powered by saved reels",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "ai",
+    "recommendation-engine",
+    "restaurant-finder",
+    "toronto",
+    "waterloo"
+  ],
+  "author": "Chaitanya Khanna",
+  "license": "MIT"
+}
