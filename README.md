@@ -2,8 +2,8 @@
 
 > An AI-powered dining concierge and semantic recommendation engine built on real-world saved culinary reels across Toronto, Waterloo Region, and beyond.
 
-[![Deploy to GitHub Pages](https://github.com/chaitanyak13/citybites-ai/actions/workflows/deploy.yml/badge.svg)](https://github.com/chaitanyak13/citybites-ai/actions/workflows/deploy.yml)
-[![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20GitHub%20Pages-orange?style=flat&logo=github)](https://chaitanyak13.github.io/citybites-ai/)
+[![Deploy to GitHub Pages](https://github.com/c2khanna/citybites-ai/actions/workflows/deploy.yml/badge.svg)](https://github.com/c2khanna/citybites-ai/actions/workflows/deploy.yml)
+[![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20GitHub%20Pages-orange?style=flat&logo=github)](https://c2khanna.github.io/citybites-ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ---
