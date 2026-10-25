@@ -4,10 +4,10 @@ import { ExtractedReelData } from '@/lib/types';
 
 export async function POST(req: Request) {
   try {
-    const { reelUrl, rawText, apiKey, provider } = await req.json();
+    const { reelUrl, rawText, restaurantName, apiKey, provider, previewOnly } = await req.json();
 
-    if (!reelUrl) {
-      return NextResponse.json({ error: 'Reel URL is required' }, { status: 400 });
+    if (!reelUrl && !restaurantName) {
+      return NextResponse.json({ error: 'Reel URL or Restaurant Name is required' }, { status: 400 });
     }
 
     let extracted: ExtractedReelData | null = null;
@@ -17,26 +17,28 @@ export async function POST(req: Request) {
     if (activeKey && (provider === 'gemini' || !provider)) {
       try {
         const prompt = `You are a culinary data extractor for Toronto and Waterloo Region.
-Extract restaurant information from this Instagram Reel link and text/caption.
+Extract or enrich restaurant information for this Instagram Reel.
+Given:
+- Restaurant Name (if known): "${restaurantName || ''}"
+- Reel URL: "${reelUrl || ''}"
+- Caption / Notes / Transcript:
+"${rawText || ''}"
+
 Respond STRICTLY with valid JSON following this schema:
 {
   "name": "Exact restaurant or cafe name",
   "region": "toronto" | "waterloo" | "mississauga" | "trip",
-  "regionName": "City · Neighborhood (e.g. 'Toronto · King West' or 'Waterloo · Uptown')",
+  "regionName": "City · Neighborhood (e.g. 'Toronto · King West' or 'Waterloo · Uptown' or 'Cambridge')",
   "vibe": "brunch" | "date" | "fine" | "casual" | "drinks",
-  "vibeName": "Readable vibe label (e.g. 'Mediterranean Brunch' or 'Michelin & Fine Dining')",
-  "badge": "Short catchy badge (e.g. 'Bougie Brunch', 'Steak Legend', 'Hidden Gem')",
-  "creator": "Creator handle if mentioned (e.g. '@mattheweats'), or '@instagram'",
-  "url": "${reelUrl}",
+  "vibeName": "Readable vibe label (e.g. 'Mediterranean Brunch', 'Romantic & Date Night', 'Michelin & Fine Dining', 'Street Food & Casual', 'Cocktails & Patios')",
+  "badge": "Short catchy badge (e.g. 'Bougie Brunch', 'Steak Legend', 'Hidden Gem', 'Late Night Bites')",
+  "creator": "Creator handle if mentioned in caption (e.g. '@mattheweats'), or '@instagram'",
+  "url": "${reelUrl || ''}",
   "desc": "Short 1-2 sentence description of what the spot is famous for",
   "tip": "Specific signature ordering or timing tip",
   "price": "$" | "$$" | "$$$" | "$$$$",
   "tags": ["array", "of", "relevant", "cuisine", "and", "vibe", "tags"]
-}
-
-Reel URL: ${reelUrl}
-Caption / Raw text:
-${rawText || 'No caption provided'}`;
+}`;
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`, {
           method: 'POST',
@@ -61,7 +63,12 @@ ${rawText || 'No caption provided'}`;
 
     // 2. Fallback heuristic extractor if LLM is unavailable
     if (!extracted) {
-      extracted = heuristicExtract(reelUrl, rawText || '');
+      extracted = heuristicExtract(reelUrl || '', rawText || '', restaurantName || '');
+    }
+
+    // If preview only (for auto-filling the form before saving)
+    if (previewOnly) {
+      return NextResponse.json(extracted);
     }
 
     // Save to database
@@ -72,21 +79,21 @@ ${rawText || 'No caption provided'}`;
   }
 }
 
-function heuristicExtract(reelUrl: string, text: string): ExtractedReelData {
-  const t = text.toLowerCase();
+function heuristicExtract(reelUrl: string, text: string, directName: string): ExtractedReelData {
+  const combined = `${directName} ${text}`.toLowerCase();
   
   // Detect region
   let region = 'toronto';
   let regionName = 'Toronto · GTA';
-  if (t.includes('waterloo') || t.includes('cambridge') || t.includes('kitchener') || t.includes('kw')) {
+  if (combined.includes('waterloo') || combined.includes('cambridge') || combined.includes('kitchener') || combined.includes('kw')) {
     region = 'waterloo';
-    regionName = t.includes('cambridge') ? 'Cambridge · Waterloo Region' : (t.includes('kitchener') ? 'Kitchener · Core' : 'Waterloo · Uptown');
-  } else if (t.includes('mississauga')) {
+    regionName = combined.includes('cambridge') ? 'Cambridge · Waterloo Region' : (combined.includes('kitchener') ? 'Kitchener · Core' : 'Waterloo · Uptown');
+  } else if (combined.includes('mississauga')) {
     region = 'mississauga';
     regionName = 'Mississauga · Streetsville';
-  } else if (t.includes('king west')) {
+  } else if (combined.includes('king west')) {
     regionName = 'Toronto · King West';
-  } else if (t.includes('yorkville')) {
+  } else if (combined.includes('yorkville')) {
     regionName = 'Toronto · Yorkville';
   }
 
@@ -96,22 +103,22 @@ function heuristicExtract(reelUrl: string, text: string): ExtractedReelData {
   let badge = 'Foodie Spot';
   let price = '$$';
 
-  if (t.includes('date') || t.includes('romantic') || t.includes('anniversary')) {
+  if (combined.includes('date') || combined.includes('romantic') || combined.includes('anniversary')) {
     vibe = 'date';
     vibeName = 'Romantic & Date Night';
     badge = 'Date Night Gem';
     price = '$$$';
-  } else if (t.includes('brunch') || t.includes('pancake') || t.includes('breakfast') || t.includes('bakery')) {
+  } else if (combined.includes('brunch') || combined.includes('pancake') || combined.includes('breakfast') || combined.includes('bakery')) {
     vibe = 'brunch';
     vibeName = 'Brunch & Coffee';
     badge = 'Brunch Spot';
     price = '$$';
-  } else if (t.includes('michelin') || t.includes('fine dining') || t.includes('steakhouse')) {
+  } else if (combined.includes('michelin') || combined.includes('fine dining') || combined.includes('steakhouse')) {
     vibe = 'fine';
     vibeName = 'Michelin & Fine Dining';
     badge = 'Fine Dining';
     price = '$$$$';
-  } else if (t.includes('cocktail') || t.includes('bar') || t.includes('speakeasy') || t.includes('rooftop')) {
+  } else if (combined.includes('cocktail') || combined.includes('bar') || combined.includes('speakeasy') || combined.includes('rooftop')) {
     vibe = 'drinks';
     vibeName = 'Cocktails & Patios';
     badge = 'Craft Cocktails';
@@ -122,18 +129,22 @@ function heuristicExtract(reelUrl: string, text: string): ExtractedReelData {
   const creatorMatch = text.match(/@([a-zA-Z0-9_.]+)/);
   const creator = creatorMatch ? `@${creatorMatch[1]}` : '@instagram';
 
-  // Guess name from first line or handle
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  let name = lines.length > 0 && lines[0].length < 40 ? lines[0] : (creatorMatch ? creatorMatch[1].replace(/[._]/g, ' ') : 'New Food Spot');
+  // Guess name
+  let name = directName;
+  if (!name) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    name = lines.length > 0 && lines[0].length < 40 ? lines[0] : (creatorMatch ? creatorMatch[1].replace(/[._]/g, ' ') : 'New Food Spot');
+  }
   name = name.charAt(0).toUpperCase() + name.slice(1);
 
   // Generate tags
   const tags: string[] = [region, vibe];
-  if (t.includes('halal')) tags.push('halal');
-  if (t.includes('steak')) tags.push('steak');
-  if (t.includes('pasta')) tags.push('italian');
-  if (t.includes('cocktails')) tags.push('cocktails');
-  if (t.includes('patio')) tags.push('patio');
+  if (combined.includes('halal')) tags.push('halal');
+  if (combined.includes('steak')) tags.push('steak');
+  if (combined.includes('pasta') || combined.includes('italian')) tags.push('italian');
+  if (combined.includes('cocktails')) tags.push('cocktails');
+  if (combined.includes('patio')) tags.push('patio');
+  if (combined.includes('spicy')) tags.push('spicy');
 
   return {
     name,
@@ -144,8 +155,8 @@ function heuristicExtract(reelUrl: string, text: string): ExtractedReelData {
     badge,
     creator,
     url: reelUrl,
-    desc: lines.slice(0, 2).join(' ') || 'Curated food spot saved from Instagram.',
-    tip: 'Try the house specialties and ask about daily specials.',
+    desc: text.slice(0, 150) || `Curated ${vibeName.toLowerCase()} spot in ${regionName}.`,
+    tip: 'Ask for the chef signature specialties and popular shareables.',
     price,
     tags
   };
