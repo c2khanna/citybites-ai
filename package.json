@@ -1,18 +1,28 @@
 {
   "name": "citybites-ai",
-  "version": "1.0.0",
-  "description": "Intelligent Food & Restaurant Concierge powered by saved reels",
-  "main": "index.html",
+  "version": "2.0.0",
+  "private": true,
   "scripts": {
-    "start": "npx serve ."
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
-  "keywords": [
-    "ai",
-    "recommendation-engine",
-    "restaurant-finder",
-    "toronto",
-    "waterloo"
-  ],
-  "author": "Chaitanya Khanna",
-  "license": "MIT"
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.475.0",
+    "next": "15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
 }
