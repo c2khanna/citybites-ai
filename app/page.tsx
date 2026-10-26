@@ -47,9 +47,13 @@ export default function HomePage() {
     setSpots(prev => prev.map(s => String(s.id) === String(id) ? { ...s, status: newStatus } : s));
 
     try {
+      const curatorKey = localStorage.getItem('citybites_curator_key') || '';
       await fetch(`/api/restaurants/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': curatorKey,
+        },
         body: JSON.stringify({ status: newStatus }),
       });
     } catch (e) {

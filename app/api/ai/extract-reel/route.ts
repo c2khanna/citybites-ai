@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { addRestaurant } from '@/lib/db';
 import { ExtractedReelData } from '@/lib/types';
+import { verifyAdminPasscode } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -69,6 +70,14 @@ Respond STRICTLY with valid JSON following this schema:
     // If preview only (for auto-filling the form before saving)
     if (previewOnly) {
       return NextResponse.json(extracted);
+    }
+
+    // Save to database requires curator admin passcode
+    if (!verifyAdminPasscode(req)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: A curator admin passcode is required to save restaurants to the database.' },
+        { status: 401 }
+      );
     }
 
     // Save to database

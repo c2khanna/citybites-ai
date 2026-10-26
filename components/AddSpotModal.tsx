@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExtractedReelData, Restaurant } from '@/lib/types';
-import { Sparkles, X, PlusCircle, Loader2, CheckCircle, HelpCircle } from 'lucide-react';
+import { Sparkles, X, PlusCircle, Loader2, CheckCircle, HelpCircle, Lock, Key } from 'lucide-react';
 
 interface AddSpotModalProps {
   isOpen: boolean;
@@ -13,6 +13,8 @@ interface AddSpotModalProps {
 export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onSpotAdded }) => {
   const [reelUrl, setReelUrl] = useState('');
   const [captionText, setCaptionText] = useState('');
+  const [curatorKey, setCuratorKey] = useState('');
+  const [showKeyField, setShowKeyField] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
@@ -32,6 +34,14 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
     creator: '@instagram',
   });
 
+  useEffect(() => {
+    try {
+      const savedKey = localStorage.getItem('citybites_curator_key') || '';
+      setCuratorKey(savedKey);
+      if (!savedKey) setShowKeyField(true);
+    } catch (e) {}
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   async function handleAIExtract() {
@@ -44,7 +54,6 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
     setIsExtracting(true);
 
     try {
-      // Get API key from localStorage if configured
       let apiKey = '';
       let provider = 'local';
       try {
@@ -65,7 +74,7 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
           restaurantName: formData.name,
           apiKey,
           provider,
-          previewOnly: true, // Only preview to allow user review
+          previewOnly: true,
         }),
       });
 
@@ -91,6 +100,10 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
     setIsSaving(true);
 
     try {
+      if (curatorKey) {
+        localStorage.setItem('citybites_curator_key', curatorKey.trim());
+      }
+
       const payload: ExtractedReelData = {
         name: formData.name || 'New Spot',
         region: formData.region || 'toronto',
@@ -108,9 +121,17 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
 
       const res = await fetch('/api/restaurants', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': curatorKey.trim(),
+        },
         body: JSON.stringify(payload),
       });
+
+      if (res.status === 401) {
+        setShowKeyField(true);
+        throw new Error('🔒 Unauthorized: Missing or invalid Curator Passcode. Only the site owner can add spots to this database.');
+      }
 
       if (!res.ok) throw new Error('Failed to save spot to database');
       const created = await res.json();
@@ -137,7 +158,14 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
             <span className="p-1.5 rounded-lg bg-orange-500/20 text-orange-400">
               <PlusCircle className="w-5 h-5" />
             </span>
-            <h3 className="text-lg font-bold text-white">Add New Food Reel</h3>
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                Add New Food Reel
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
+                  <Lock className="w-2.5 h-2.5 text-amber-400" /> Protected
+                </span>
+              </h3>
+            </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition">
             <X className="w-5 h-5" />
@@ -156,6 +184,28 @@ export const AddSpotModal: React.FC<AddSpotModalProps> = ({ isOpen, onClose, onS
             <span>{successNotice}</span>
           </div>
         )}
+
+        {/* Curator Passcode Field */}
+        <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-amber-400" /> Curator Passcode:
+            </label>
+            <span className="text-[10px] text-slate-400">
+              {curatorKey ? '✓ Saved in browser' : 'Required to save'}
+            </span>
+          </div>
+          <input
+            type="password"
+            placeholder="Enter your curator admin passcode..."
+            value={curatorKey}
+            onChange={e => setCuratorKey(e.target.value)}
+            className="w-full px-3 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+          <p className="text-[10px] text-slate-400 mt-1">
+            Protects your database so only you can add spots. Public visitors can view and search without a passcode.
+          </p>
+        </div>
 
         {/* Step 1: Instagram Reel Link & Caption */}
         <div className="space-y-3 bg-[var(--background)] p-4 rounded-xl border border-[var(--border)]">
