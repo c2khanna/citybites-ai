@@ -7,11 +7,12 @@ import { FilterBar } from '@/components/FilterBar';
 import { AIConciergeDrawer } from '@/components/AIConciergeDrawer';
 import { AddSpotModal } from '@/components/AddSpotModal';
 import { SurpriseModal } from '@/components/SurpriseModal';
-import { Sparkles, Dices, PlusCircle, Database, Loader2 } from 'lucide-react';
+import { Sparkles, Dices, PlusCircle, Loader2, Lock, Unlock } from 'lucide-react';
 
 export default function HomePage() {
   const [spots, setSpots] = useState<Restaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCuratorUnlocked, setIsCuratorUnlocked] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -39,7 +40,31 @@ export default function HomePage() {
       }
     }
     load();
+
+    try {
+      const savedKey = localStorage.getItem('citybites_curator_key');
+      setIsCuratorUnlocked(Boolean(savedKey));
+    } catch (e) {}
   }, []);
+
+  function handleCuratorLoginToggle() {
+    const current = localStorage.getItem('citybites_curator_key') || '';
+    const input = window.prompt(
+      'Enter Curator Passcode (allows adding & deleting spots):',
+      current
+    );
+    if (input !== null) {
+      if (input.trim()) {
+        localStorage.setItem('citybites_curator_key', input.trim());
+        setIsCuratorUnlocked(true);
+        alert('🔓 Curator mode unlocked! You can now add and delete spots.');
+      } else {
+        localStorage.removeItem('citybites_curator_key');
+        setIsCuratorUnlocked(false);
+        alert('🔒 Curator mode locked.');
+      }
+    }
+  }
 
   // Update status handler
   async function handleUpdateStatus(id: string | number, newStatus: 'want_to_go' | 'visited' | 'favorite') {
@@ -61,14 +86,28 @@ export default function HomePage() {
     }
   }
 
-  // Delete handler
+  // Delete handler with interactive passcode prompt if missing
   async function handleDeleteSpot(id: string | number) {
     const previous = spots;
+    let curatorKey = '';
+    try {
+      curatorKey = localStorage.getItem('citybites_curator_key') || '';
+    } catch (e) {}
+
+    // If no key saved yet, prompt the user right here
+    if (!curatorKey) {
+      const input = window.prompt('🔒 Enter Curator Passcode to confirm deletion:');
+      if (!input || !input.trim()) return; // User cancelled
+      curatorKey = input.trim();
+      localStorage.setItem('citybites_curator_key', curatorKey);
+      setIsCuratorUnlocked(true);
+    }
+
+    // Optimistic removal
     setSpots(prev => prev.filter(s => String(s.id) !== String(id)));
 
     try {
-      const curatorKey = localStorage.getItem('citybites_curator_key') || '';
-      const res = await fetch(`/api/restaurants/${id}`, {
+      let res = await fetch(`/api/restaurants/${id}`, {
         method: 'DELETE',
         headers: {
           'x-admin-passcode': curatorKey,
@@ -76,17 +115,33 @@ export default function HomePage() {
       });
 
       if (res.status === 401) {
-        alert('🔒 Unauthorized: A curator passcode is required to delete spots from the database.');
-        setSpots(previous);
+        const retry = window.prompt('🔒 Passcode incorrect. Please re-enter your valid Curator Passcode:');
+        if (retry && retry.trim()) {
+          curatorKey = retry.trim();
+          localStorage.setItem('citybites_curator_key', curatorKey);
+          setIsCuratorUnlocked(true);
+
+          res = await fetch(`/api/restaurants/${id}`, {
+            method: 'DELETE',
+            headers: {
+              'x-admin-passcode': curatorKey,
+            },
+          });
+
+          if (res.ok) return; // Succeeded on retry
+        }
+
+        alert('🔒 Unauthorized: Missing or invalid curator passcode.');
+        setSpots(previous); // Revert
         return;
       }
 
       if (!res.ok) {
-        throw new Error('Failed to delete spot');
+        throw new Error('Failed to delete spot from database');
       }
     } catch (e: any) {
       alert(e.message || 'Failed to delete spot');
-      setSpots(previous);
+      setSpots(previous); // Revert
     }
   }
 
@@ -141,27 +196,47 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Curator Login/Status Button */}
+          <button
+            onClick={handleCuratorLoginToggle}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+              isCuratorUnlocked
+                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900/50'
+                : 'bg-[var(--card)] text-slate-300 border-[var(--border)] hover:bg-slate-800'
+            }`}
+            title="Curator Passcode Settings"
+          >
+            {isCuratorUnlocked ? (
+              <Unlock className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
+            )}
+            <span>{isCuratorUnlocked ? 'Curator Unlocked' : 'Curator Login'}</span>
+          </button>
+
           <button
             onClick={() => setIsAddOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 transition shadow-lg shadow-orange-500/20 active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 transition shadow-lg shadow-orange-500/20 active:scale-95 cursor-pointer"
           >
-            <PlusCircle className="w-4 h-4" /> Add Food Reel
+            <PlusCircle className="w-3.5 h-3.5" /> Add Food Reel
           </button>
+          
           <button
             onClick={() => {
               const el = document.getElementById('aiSection');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition shadow-lg shadow-purple-500/20 active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition shadow-lg shadow-purple-500/20 active:scale-95 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" /> Ask Concierge
+            <Sparkles className="w-3.5 h-3.5" /> Ask Concierge
           </button>
+          
           <button
             onClick={pickSurprise}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-[var(--card)] hover:bg-slate-800 border border-[var(--border)] transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-[var(--card)] hover:bg-slate-800 border border-[var(--border)] transition cursor-pointer"
           >
-            <Dices className="w-4 h-4" /> Surprise Me!
+            <Dices className="w-3.5 h-3.5" /> Surprise Me!
           </button>
         </div>
       </header>
