@@ -61,6 +61,35 @@ export default function HomePage() {
     }
   }
 
+  // Delete handler
+  async function handleDeleteSpot(id: string | number) {
+    const previous = spots;
+    setSpots(prev => prev.filter(s => String(s.id) !== String(id)));
+
+    try {
+      const curatorKey = localStorage.getItem('citybites_curator_key') || '';
+      const res = await fetch(`/api/restaurants/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-admin-passcode': curatorKey,
+        },
+      });
+
+      if (res.status === 401) {
+        alert('🔒 Unauthorized: A curator passcode is required to delete spots from the database.');
+        setSpots(previous);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error('Failed to delete spot');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete spot');
+      setSpots(previous);
+    }
+  }
+
   // Spot added callback
   function handleSpotAdded(newSpot: Restaurant) {
     setSpots(prev => [newSpot, ...prev]);
@@ -189,6 +218,7 @@ export default function HomePage() {
               key={spot.id}
               spot={spot}
               onUpdateStatus={handleUpdateStatus}
+              onDelete={handleDeleteSpot}
             />
           ))}
         </div>

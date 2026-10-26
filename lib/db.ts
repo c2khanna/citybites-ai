@@ -156,3 +156,27 @@ export async function updateRestaurantStatus(
   }
   return false;
 }
+
+export async function deleteRestaurant(id: string | number): Promise<boolean> {
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .delete()
+        .eq('id', id);
+
+      if (!error) return true;
+      console.warn('Supabase delete error:', error.message);
+    } catch (err) {
+      console.warn('Supabase delete failed, falling back to local file:', err);
+    }
+  }
+
+  const current = readLocalRestaurants();
+  const filtered = current.filter(s => String(s.id) !== String(id));
+  if (filtered.length !== current.length) {
+    writeLocalRestaurants(filtered);
+    return true;
+  }
+  return false;
+}
